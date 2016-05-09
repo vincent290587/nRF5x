@@ -33,6 +33,7 @@ OBJCOPY         := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-objcopy'
 FROMELF         := 'C:/Keil_v5/ARM/ARMCC/bin/fromelf'
 NRFUTIL         := '$(PROGFILES)/Nordic Semiconductor/Master Control Panel/3.10.0.14/nrf/nrfutil'
 SIZE            := '$(GNU_INSTALL_ROOT)/bin/$(GNU_PREFIX)-size'
+NRFJPROG        := 'C:/Program Files (x86)/Nordic Semiconductor/nrf5x/bin/nrfjprog'
 
 #function for removing duplicates in a list
 remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-out $(firstword $1),$1))))
@@ -384,7 +385,7 @@ cleanobj:
 	$(RM) $(BUILD_DIRECTORIES)/*.o
 flash: nrf52832_xxaa
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
-	nrfjprog --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf52  --chiperase
-	nrfjprog --reset -f nrf52
+	$(NRFJPROG) --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf52  --chiperase
+	$(NRFJPROG) --reset -f nrf52
 
 ## Flash softdevice

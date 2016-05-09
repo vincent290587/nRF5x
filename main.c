@@ -1157,7 +1157,7 @@ int main(void)
     ble_ant_stack_init();
 
     err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), bsp_evt_handler);
-    APP_ERROR_CHECK(err_code);
+    //APP_ERROR_CHECK(err_code);
     // err_code = bsp_buttons_enable((1 << WAKEUP_BUTTON_ID) | (1 << BOND_DELETE_ALL_BUTTON_ID));
     // APP_ERROR_CHECK(err_code);
 	
