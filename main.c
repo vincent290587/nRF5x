@@ -71,7 +71,6 @@
 
 #include "nrf_drv_wdt.h"
 
-#define BONDING_ENABLE
 
 #ifdef BLE_DFU_APP_SUPPORT
 #include "ble_dfu.h"
@@ -1151,13 +1150,12 @@ int main(void)
 	
     // Initialize peripherals
     timers_init();
-    app_trace_init();
 
     // Initialize S332 SoftDevice
     ble_ant_stack_init();
 
     err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), bsp_evt_handler);
-    //APP_ERROR_CHECK(err_code);
+    APP_ERROR_CHECK(err_code);
     // err_code = bsp_buttons_enable((1 << WAKEUP_BUTTON_ID) | (1 << BOND_DELETE_ALL_BUTTON_ID));
     // APP_ERROR_CHECK(err_code);
 	
