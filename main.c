@@ -113,15 +113,16 @@
 
 #define DEAD_BEEF                       0xDEADBEEF                                   /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
-#define BSC_CHANNEL_NUMBER              0x01
-#define WILDCARD_TRANSMISSION_TYPE  0x00                                                            /**< Wildcard transmission type. */
-#define WILDCARD_DEVICE_NUMBER      0x00                                                            /**< Wildcard device number. */
-#define BSC_DEVICE_TYPE        0x00
+#define WILDCARD_TRANSMISSION_TYPE      0x00
 
-#define ANT_HRMRX_ANT_CHANNEL           0                                            /**< Default ANT Channel. */
-#define ANT_HRMRX_DEVICE_NUMBER         0                                            /**< Device Number. */
-#define ANT_HRMRX_TRANS_TYPE            0                                            /**< Transmission Type. */
-#define ANTPLUS_NETWORK_NUMBER          0                                            /**< Network number. */
+#define BSC_CHANNEL_NUMBER              0x01                                                     /**< Wildcard transmission type. */
+#define BSC_DEVICE_NUMBER               0xB02B                                                            /**< Wildcard device number. */
+#define BSC_DEVICE_TYPE                 0x00
+
+#define ANT_HRMRX_ANT_CHANNEL           0x00                                            /**< Default ANT Channel. */
+#define ANT_HRMRX_DEVICE_NUMBER         0x0D22                                            /**< Device Number. */
+
+#define ANTPLUS_NETWORK_NUMBER          0x00                                           /**< Network number. */
 
 #define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 1                           /**< UART RX buffer size. */
@@ -132,7 +133,7 @@ static ble_hrs_t                        m_hrs;                                  
 
 HRM_DISP_CHANNEL_CONFIG_DEF(m_ant_hrm,
                             ANT_HRMRX_ANT_CHANNEL,
-                            ANT_HRMRX_TRANS_TYPE,
+                            WILDCARD_TRANSMISSION_TYPE,
                             ANT_HRMRX_DEVICE_NUMBER,
                             ANTPLUS_NETWORK_NUMBER,
                             HRM_MSG_PERIOD_4Hz);
@@ -181,7 +182,7 @@ BSC_DISP_CHANNEL_CONFIG_DEF(m_ant_bsc,
                             BSC_CHANNEL_NUMBER,
                             WILDCARD_TRANSMISSION_TYPE,
                             BSC_DEVICE_TYPE,
-                            WILDCARD_DEVICE_NUMBER,
+                            BSC_DEVICE_NUMBER,
                             ANTPLUS_NETWORK_NUMBER,
                             BSC_MSG_PERIOD_4Hz);
 BSC_DISP_PROFILE_CONFIG_DEF(m_ant_bsc,
@@ -300,18 +301,6 @@ static void reset_prepare(void)
 #endif // BLE_DFU_APP_SUPPORT
 
 
-/**@brief Function for dispatching a ANT stack event to all modules with a ANT stack event handler.
- *
- * @details This function is called from the ANT Stack event interrupt handler after a ANT stack
- *          event has been received.
- *
- * @param[in] p_ant_evt  ANT stack event.
- */
-void ant_evt_dispatch(ant_evt_t * p_ant_evt)
-{
-    ant_bsc_disp_evt_handler(&m_ant_bsc, p_ant_evt);
-    //ant_state_indicator_evt_handler(p_ant_evt);
-}
 
 
 #ifdef ENABLE_DEBUG_LOG_SUPPORT
@@ -438,25 +427,6 @@ void ant_bsc_evt_handler(ant_bsc_profile_t * p_profile, ant_bsc_evt_t event)
     }
 }
 
-/**@brief Function for BSC profile initialization.
- *
- * @details Initializes the BSC profile and open ANT channel.
- */
-static void profile_setup(void)
-{
-/** @snippet [ANT BSC RX Profile Setup] */
-    uint32_t err_code;
-
-    err_code = ant_bsc_disp_init(&m_ant_bsc,
-                                 BSC_DISP_CHANNEL_CONFIG(m_ant_bsc),
-                                 BSC_DISP_PROFILE_CONFIG(m_ant_bsc));
-    APP_ERROR_CHECK(err_code);
-
-    err_code = ant_bsc_disp_open(&m_ant_bsc);
-    APP_ERROR_CHECK(err_code);
-
-/** @snippet [ANT BSC RX Profile Setup] */
-}
 
 /**@brief Callback function for asserts in the SoftDevice.
  *
@@ -500,6 +470,14 @@ static void ant_hrm_rx_start(void)
     APP_ERROR_CHECK(err_code);
 }
 
+/**@brief Start receiving the ANT HRM data.
+ */
+static void ant_bsc_rx_start(void)
+{
+    uint32_t err_code = ant_bsc_disp_open(&m_ant_bsc);
+    APP_ERROR_CHECK(err_code);
+}
+
 
 /**@brief Attempt to both open the ant channel and start ble advertising.
 */
@@ -507,6 +485,7 @@ static void ant_and_adv_start(void)
 {
     advertising_start();
     ant_hrm_rx_start();
+	  ant_bsc_rx_start();
 }
 
 
@@ -606,7 +585,7 @@ static void services_init(void)
     uint8_t        body_sensor_location;
 
     // Initialize Heart Rate Service.
-    body_sensor_location = BLE_HRS_BODY_SENSOR_LOCATION_FINGER;
+    body_sensor_location = BLE_HRS_BODY_SENSOR_LOCATION_CHEST;
 
     memset(&hrs_init, 0, sizeof(hrs_init));
 
@@ -719,12 +698,6 @@ static void conn_params_init(void)
 }
 
 
-/**@brief ANT CHANNEL_CLOSED event handler.
- */
-static void on_ant_evt_channel_closed(void)
-{
-    ant_and_adv_start();
-}
 
 
 /**@brief Application's Stack ANT event handler.
@@ -742,7 +715,23 @@ static void on_ant_evt(ant_evt_t * p_ant_evt)
                 break;
 
             case EVENT_CHANNEL_CLOSED:
-                on_ant_evt_channel_closed();
+                //on_ant_evt_channel_closed();
+                break;
+
+            default:
+                // No implementation needed.
+                break;
+        }
+    } else if (p_ant_evt->channel == BSC_CHANNEL_NUMBER)
+    {
+        switch (p_ant_evt->event)
+        {
+            case EVENT_RX:
+                ant_bsc_disp_evt_handler(&m_ant_bsc, p_ant_evt);
+                break;
+
+            case EVENT_CHANNEL_CLOSED:
+                //on_ant_evt_channel_closed();
                 break;
 
             default:
@@ -1042,6 +1031,16 @@ static void ble_ant_stack_init(void)
 
     err_code = ant_plus_key_set(ANTPLUS_NETWORK_NUMBER);
     APP_ERROR_CHECK(err_code);
+		
+		err_code = ant_hrm_disp_init(&m_ant_hrm,
+                                 HRM_DISP_CHANNEL_CONFIG(m_ant_hrm),
+                                 ant_hrm_evt_handler);
+    APP_ERROR_CHECK(err_code);
+		
+		err_code = ant_bsc_disp_init(&m_ant_bsc,
+                                 BSC_DISP_CHANNEL_CONFIG(m_ant_bsc),
+                                 BSC_DISP_PROFILE_CONFIG(m_ant_bsc));
+    APP_ERROR_CHECK(err_code);
 
 #ifdef BONDING_ENABLE
     // Register with the SoftDevice handler module for BLE events.
@@ -1086,9 +1085,7 @@ void bsp_evt_handler(bsp_event_t evt)
  */
 void wdt_event_handler(void)
 {
-#ifndef BSP_SIMPLE
-    LEDS_INVERT(LEDS_MASK);
-#endif
+
 }
 
 /**@brief Function for initializing the UART.
@@ -1151,7 +1148,7 @@ int main(void)
     // Initialize peripherals
     timers_init();
 
-    // Initialize S332 SoftDevice
+    // Initialize S332 SoftDevice & ANT
     ble_ant_stack_init();
 
     err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), bsp_evt_handler);
@@ -1161,21 +1158,12 @@ int main(void)
 	
 	  // UART init
 	  uart_init();
-	
-	  // ANT init
-    profile_setup();
 
     // Initialize Bluetooth stack parameters.
     gap_params_init();
     advertising_init();
     services_init();
     conn_params_init();
-
-    // Initialize ANT+ HRM receive channel.
-    err_code = ant_hrm_disp_init(&m_ant_hrm,
-                                 HRM_DISP_CHANNEL_CONFIG(m_ant_hrm),
-                                 ant_hrm_evt_handler);
-    APP_ERROR_CHECK(err_code);
 
 #ifdef BONDING_ENABLE
     uint32_t count; 
