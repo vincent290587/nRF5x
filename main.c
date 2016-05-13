@@ -87,7 +87,7 @@
 
 #define IS_SRVC_CHANGED_CHARACT_PRESENT 1                                            /**< Whether or not to include the service_changed characteristic. If not enabled, the server's database cannot be changed for the lifetime of the device */
 #define APP_TIMER_PRESCALER             0                                            /**< Value of the RTC1 PRESCALER register. */
-#define APP_TIMER_OP_QUEUE_SIZE         4                                            /**< Size of timer operation queues. */
+#define APP_TIMER_OP_QUEUE_SIZE         6                                            /**< Size of timer operation queues. */
 
 #define SECOND_1_25_MS_UNITS            800                                          /**< Definition of 1 second, when 1 unit is 1.25 ms. */
 #define SECOND_10_MS_UNITS              100                                          /**< Definition of 1 second, when 1 unit is 10 ms. */
@@ -124,7 +124,7 @@
 
 #define ANTPLUS_NETWORK_NUMBER          0x00                                           /**< Network number. */
 
-#define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
+#define UART_TX_BUF_SIZE 64                         /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 1                           /**< UART RX buffer size. */
 
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;     /**< Handle of the current connection. */
@@ -185,8 +185,7 @@ BSC_DISP_CHANNEL_CONFIG_DEF(m_ant_bsc,
                             BSC_DEVICE_NUMBER,
                             ANTPLUS_NETWORK_NUMBER,
                             BSC_MSG_PERIOD_4Hz);
-BSC_DISP_PROFILE_CONFIG_DEF(m_ant_bsc,
-                            ant_bsc_evt_handler);
+BSC_DISP_PROFILE_CONFIG_DEF(m_ant_bsc, ant_bsc_evt_handler);
 ant_bsc_profile_t m_ant_bsc;
 /** @snippet [ANT BSC RX Instance] */
 
@@ -199,6 +198,25 @@ const char * indications_list[] = BSP_INDICATIONS_LIST;
 void uart_error_handle(app_uart_evt_t * p_event)
 {
    // No implementation needed.
+}
+
+void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *p_file_name) {
+  
+  if (error_code == NRF_SUCCESS) return;
+  
+  if (p_file_name) {
+    //printf("$DBG,1,%ud,%ud,%s\n\r", error_code, line_num, p_file_name);
+  } else {
+    //printf("$DBG,0,%ud,%ud\n\r", error_code, line_num);
+  }
+
+}
+
+void app_error_handler_bare(uint32_t error_code) {
+  
+  if (error_code == NRF_SUCCESS) return;
+
+
 }
 
 
@@ -706,6 +724,7 @@ static void conn_params_init(void)
  */
 static void on_ant_evt(ant_evt_t * p_ant_evt)
 {
+	
     if (p_ant_evt->channel == ANT_HRMRX_ANT_CHANNEL)
     {
         switch (p_ant_evt->event)
@@ -817,13 +836,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             break;
             
         case BLE_GAP_EVT_DISCONNECTED:
-            err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-            APP_ERROR_CHECK(err_code);
-
-            // Need to close the ANT channel to make it safe to write bonding information to flash
-            err_code = sd_ant_channel_close(ANT_HRMRX_ANT_CHANNEL);
-            APP_ERROR_CHECK(err_code);
-
+            
+				    advertising_start();
             // Note: Bonding information will be stored, advertising will be restarted and the
             //       ANT channel will be reopened when ANT event CHANNEL_CLOSED is received.
             break;
@@ -839,16 +853,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 #endif // BONDING_ENABLE
 
         case BLE_GAP_EVT_TIMEOUT:
-            if (p_ble_evt->evt.gap_evt.params.timeout.src == BLE_GAP_TIMEOUT_SRC_ADVERTISING)
-            { 
-                err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-                APP_ERROR_CHECK(err_code);
-                // err_code = bsp_buttons_enable((1 << WAKEUP_BUTTON_ID) | (1 << BOND_DELETE_ALL_BUTTON_ID));
-                // APP_ERROR_CHECK(err_code);
-                // Go to system-off mode (this function will not return; wakeup will cause a reset)
-                err_code = sd_power_system_off();
-                APP_ERROR_CHECK(err_code);
-            }
+            
             break;
 
 #ifndef	BONDING_ENABLE
@@ -1032,7 +1037,7 @@ static void ble_ant_stack_init(void)
     err_code = ant_plus_key_set(ANTPLUS_NETWORK_NUMBER);
     APP_ERROR_CHECK(err_code);
 		
-		err_code = ant_hrm_disp_init(&m_ant_hrm,
+    err_code = ant_hrm_disp_init(&m_ant_hrm,
                                  HRM_DISP_CHANNEL_CONFIG(m_ant_hrm),
                                  ant_hrm_evt_handler);
     APP_ERROR_CHECK(err_code);
@@ -1134,7 +1139,7 @@ static void power_manage(void)
 int main(void)
 {
     uint32_t err_code;
-	
+
 	  //Configure WDT.
 #if (WDT_ENABLED == 1)
     nrf_drv_wdt_config_t config = NRF_DRV_WDT_DEAFULT_CONFIG;
@@ -1147,6 +1152,9 @@ int main(void)
 	
     // Initialize peripherals
     timers_init();
+	
+	  // UART init
+	  uart_init();
 
     // Initialize S332 SoftDevice & ANT
     ble_ant_stack_init();
@@ -1155,15 +1163,16 @@ int main(void)
     APP_ERROR_CHECK(err_code);
     // err_code = bsp_buttons_enable((1 << WAKEUP_BUTTON_ID) | (1 << BOND_DELETE_ALL_BUTTON_ID));
     // APP_ERROR_CHECK(err_code);
-	
-	  // UART init
-	  uart_init();
+
 
     // Initialize Bluetooth stack parameters.
     gap_params_init();
     advertising_init();
     services_init();
     conn_params_init();
+		
+
+		
 
 #ifdef BONDING_ENABLE
     uint32_t count; 
