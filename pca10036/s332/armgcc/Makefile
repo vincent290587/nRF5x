@@ -41,7 +41,6 @@ remduplicates = $(strip $(if $1,$(firstword $1) $(call remduplicates,$(filter-ou
 #source common to all targets
 C_SOURCE_FILES += \
 $(abspath ../../../../../../components/libraries/button/app_button.c) \
-$(abspath ../../../../../../components/libraries/util/app_error.c) \
 $(abspath ../../../../../../components/libraries/util/app_error_weak.c) \
 $(abspath ../../../../../../components/libraries/fifo/app_fifo.c) \
 $(abspath ../../../../../../components/libraries/timer/app_timer.c) \
