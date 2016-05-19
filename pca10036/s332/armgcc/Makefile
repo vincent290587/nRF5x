@@ -50,6 +50,7 @@ $(abspath ../../../../../../components/libraries/fstorage/fstorage.c) \
 $(abspath ../../../../../../components/libraries/util/nrf_assert.c) \
 $(abspath ../../../../../../components/libraries/util/nrf_log.c) \
 $(abspath ../../../../../../components/libraries/uart/retarget.c) \
+$(abspath ../../../../../../components/libraries/pwm/app_pwm.c) \
 $(abspath ../../../../../../components/libraries/sensorsim/sensorsim.c) \
 $(abspath ../../../../../../components/libraries/uart/app_uart_fifo.c) \
 $(abspath ../../../../../../components/libraries/bootloader_dfu/bootloader_util.c) \
@@ -59,6 +60,8 @@ $(abspath ../../../../../../components/drivers_nrf/common/nrf_drv_common.c) \
 $(abspath ../../../../../../components/drivers_nrf/gpiote/nrf_drv_gpiote.c) \
 $(abspath ../../../../../../components/drivers_nrf/uart/nrf_drv_uart.c) \
 $(abspath ../../../../../../components/drivers_nrf/wdt/nrf_drv_wdt.c) \
+$(abspath ../../../../../../components/drivers_nrf/ppi/nrf_drv_ppi.c) \
+$(abspath ../../../../../../components/drivers_nrf/timer/nrf_drv_timer.c) \
 $(abspath ../../../../../../components/drivers_nrf/pstorage/pstorage.c) \
 $(abspath ../../../../../../components/ant/ant_channel_config/ant_channel_config.c) \
 $(abspath ../../../../../../components/ant/ant_profiles/ant_hrm/ant_hrm.c) \
@@ -105,7 +108,10 @@ INC_PATHS += -I$(abspath ../../../../../../components/libraries/timer)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/fifo)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/fstorage/config)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/delay)
+INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/ppi)
+INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/timer)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/util)
+INC_PATHS += -I$(abspath ../../../../../../components/libraries/pwm)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/device_manager)
 INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/uart)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/common)
@@ -146,6 +152,7 @@ INC_PATHS += -I$(abspath ../../../../../../components/libraries/button)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/bootloader_dfu)
 INC_PATHS += -I$(abspath ../../../../../../components/softdevice/common/softdevice_handler)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_services/ble_hrs)
+INC_PATHS += -I$(abspath ../../../../../../external/segger_rtt)
 
 OBJECT_DIRECTORY = _build
 LISTING_DIRECTORY = $(OBJECT_DIRECTORY)
@@ -185,7 +192,6 @@ CFLAGS += -DANT_STACK_SUPPORT_REQD
 CFLAGS += -D__HEAP_SIZE=0
 CFLAGS += -DTRACE_HRM_PAGE_2_ENABLE
 CFLAGS += -DTRACE_HRM_PAGE_3_ENABLE
-CFLAGS += -DNRF_LOG_USES_UART=1
 CFLAGS += -DS332
 CFLAGS += -DNRF52_PAN_10
 CFLAGS += -DTRACE_HRM_PAGE_4_ENABLE
@@ -215,10 +221,12 @@ CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DNRF52_PAN_48
 CFLAGS += -DNRF52_PAN_49
 CFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
-# CFLAGS += -DBLE_DFU_APP_SUPPORT
+# CFLAGS += -DUSE_TUNES
+CFLAGS += -DNRF_LOG_USES_RTT=1
+CFLAGS += -DBLE_DFU_APP_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-CFLAGS += -Wall -Werror -O3 -g3
+CFLAGS += -Wall -Werror -O3
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 # keep every function in separate section. This will allow linker to dump unused functions
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -232,6 +240,7 @@ LDFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 LDFLAGS += -Wl,--gc-sections
 # use newlib in nano version
 LDFLAGS += --specs=nano.specs -lc -lnosys
+
 
 # Assembler flags
 ASMFLAGS += -x assembler-with-cpp
@@ -265,7 +274,6 @@ ASMFLAGS += -DANT_STACK_SUPPORT_REQD
 ASMFLAGS += -D__HEAP_SIZE=0
 ASMFLAGS += -DTRACE_HRM_PAGE_2_ENABLE
 ASMFLAGS += -DTRACE_HRM_PAGE_3_ENABLE
-ASMFLAGS += -DNRF_LOG_USES_UART=1
 ASMFLAGS += -DS332
 ASMFLAGS += -DNRF52_PAN_10
 ASMFLAGS += -DTRACE_HRM_PAGE_4_ENABLE
@@ -295,7 +303,9 @@ ASMFLAGS += -DNRF52_PAN_63
 ASMFLAGS += -DNRF52_PAN_48
 ASMFLAGS += -DNRF52_PAN_49
 ASMFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
-# ASMFLAGS += -DBLE_DFU_APP_SUPPORT 
+#ASMFLAGS += -DUSE_TUNES
+ASMFLAGS += -DNRF_LOG_USES_RTT=1
+ASMFLAGS += -DBLE_DFU_APP_SUPPORT 
 
 #default target - first one defined
 default: nrf52832_xxaa
