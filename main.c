@@ -241,9 +241,9 @@ void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *p_
   if (error_code == NRF_SUCCESS) return;
   
   if (p_file_name) {
-    //printf("$DBG,1,%ud,%ud,%s\n\r", error_code, line_num, p_file_name);
+    printf("$DBG,1,%u,%u,%s\n\r", (unsigned int)error_code, (unsigned int)line_num, p_file_name);
   } else {
-    //printf("$DBG,0,%ud,%ud\n\r", error_code, line_num);
+    printf("$DBG,0,%u,%u\n\r", (unsigned int)error_code, (unsigned int)line_num);
   }
   
 #if (NRF_LOG_USES_RTT==1)
@@ -272,9 +272,6 @@ static void advertising_stop(void)
 
     err_code = sd_ble_gap_adv_stop();
     APP_ERROR_CHECK(err_code);
-
-    //err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    //APP_ERROR_CHECK(err_code);
 }
 
 
@@ -344,8 +341,6 @@ static void reset_prepare(void)
         // Disconnect from peer.
         err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
         APP_ERROR_CHECK(err_code);
-        //err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-        //APP_ERROR_CHECK(err_code);
     }
     else
     {
@@ -355,6 +350,8 @@ static void reset_prepare(void)
 
     err_code = ble_conn_params_stop();
     APP_ERROR_CHECK(err_code);
+	
+	//sd_power_gpregret_set(BOOTLOADER_DFU_START);
 
     nrf_delay_ms(500);
 }
