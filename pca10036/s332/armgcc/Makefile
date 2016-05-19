@@ -75,6 +75,7 @@ $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_pa
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_page_3.c) \
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_page_4.c) \
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_page_5.c) \
+$(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_combined_page_0.c) \
 $(abspath ../../../../../../components/ant/ant_key_manager/ant_key_manager.c) \
 $(abspath ../../../../../../components/ant/ant_stack_config/ant_stack_config.c) \
 $(abspath ../../../../../bsp/bsp.c) \
@@ -215,7 +216,7 @@ CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DNRF52_PAN_48
 CFLAGS += -DNRF52_PAN_49
 CFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
-CFLAGS += -DBLE_DFU_APP_SUPPORT
+# CFLAGS += -DBLE_DFU_APP_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
 CFLAGS += -Wall -Werror -O3 -g3
@@ -295,7 +296,7 @@ ASMFLAGS += -DNRF52_PAN_63
 ASMFLAGS += -DNRF52_PAN_48
 ASMFLAGS += -DNRF52_PAN_49
 ASMFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
-ASMFLAGS += -DBLE_DFU_APP_SUPPORT 
+# ASMFLAGS += -DBLE_DFU_APP_SUPPORT 
 
 #default target - first one defined
 default: nrf52832_xxaa

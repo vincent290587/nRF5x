@@ -71,11 +71,15 @@
 
 #include "nrf_drv_wdt.h"
 
+#ifdef NRF_LOG_USES_RTT
+#include "SEGGER_RTT.h"
+#endif
 
 #ifdef BLE_DFU_APP_SUPPORT
 #include "ble_dfu.h"
 #include "dfu_app_handler.h"
 #endif // BLE_DFU_APP_SUPPORT
+
 
 #define WAKEUP_BUTTON_ID                0                                            /**< Button used to wake up the application. */
 #define BOND_DELETE_ALL_BUTTON_ID       1                                            /**< Button used for deleting all bonded centrals during startup. */
@@ -117,7 +121,7 @@
 
 #define BSC_CHANNEL_NUMBER              0x01                                                     /**< Wildcard transmission type. */
 #define BSC_DEVICE_NUMBER               0xB02B                                                            /**< Wildcard device number. */
-#define BSC_DEVICE_TYPE                 0x00
+#define BSC_DEVICE_TYPE                 0x79
 
 #define ANT_HRMRX_ANT_CHANNEL           0x00                                            /**< Default ANT Channel. */
 #define ANT_HRMRX_DEVICE_NUMBER         0x0D22                                            /**< Device Number. */
@@ -191,9 +195,6 @@ ant_bsc_profile_t m_ant_bsc;
 
 nrf_drv_wdt_channel_id wdt_channel_id;
 
-bsp_indication_t actual_state =  BSP_INDICATE_FIRST;         /**< Currently indicated state. */
-
-const char * indications_list[] = BSP_INDICATIONS_LIST;
 
 void uart_error_handle(app_uart_evt_t * p_event)
 {
@@ -209,6 +210,10 @@ void app_error_handler(uint32_t error_code, uint32_t line_num, const uint8_t *p_
   } else {
     //printf("$DBG,0,%ud,%ud\n\r", error_code, line_num);
   }
+  
+#ifdef NRF_LOG_USES_RTT
+  SEGGER_RTT_printf(0, "[Erreur] 0x%x ligne %u dans %s\n", error_code, (unsigned int)line_num, p_file_name); 
+#endif
 
 }
 
@@ -216,6 +221,9 @@ void app_error_handler_bare(uint32_t error_code) {
   
   if (error_code == NRF_SUCCESS) return;
 
+#ifdef NRF_LOG_USES_RTT
+  SEGGER_RTT_printf(0, "Erreur: 0x%x\n", error_code); 
+#endif
 
 }
 
@@ -230,8 +238,8 @@ static void advertising_stop(void)
     err_code = sd_ble_gap_adv_stop();
     APP_ERROR_CHECK(err_code);
 
-    err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
+    //err_code = bsp_indication_set(BSP_INDICATE_IDLE);
+    //APP_ERROR_CHECK(err_code);
 }
 
 
@@ -301,8 +309,8 @@ static void reset_prepare(void)
         // Disconnect from peer.
         err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
         APP_ERROR_CHECK(err_code);
-        err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-        APP_ERROR_CHECK(err_code);
+        //err_code = bsp_indication_set(BSP_INDICATE_IDLE);
+        //APP_ERROR_CHECK(err_code);
     }
     else
     {
@@ -392,7 +400,9 @@ static uint32_t calculate_cadence(int32_t rev_cnt, int32_t evt_time)
 
 void ant_bsc_evt_handler(ant_bsc_profile_t * p_profile, ant_bsc_evt_t event)
 {
-
+    unsigned int _speed, _cadence;
+  
+  
     switch (event)
     {
         case ANT_BSC_PAGE_0_UPDATED:
@@ -407,37 +417,18 @@ void ant_bsc_evt_handler(ant_bsc_profile_t * p_profile, ant_bsc_evt_t event)
             /* fall through */
         case ANT_BSC_PAGE_5_UPDATED:
             /* Log computed value */
-            app_trace_log("Page was updated\n\r");
 
-            if (BSC_DEVICE_TYPE == BSC_SPEED_DEVICE_TYPE)
-            {
-                app_trace_log("%-30s %u kph\n\r",
-                              "Computed speed value:",
-                              (unsigned int) calculate_speed(p_profile->BSC_PROFILE_rev_count,
-                                                             p_profile->BSC_PROFILE_event_time));
-            }
-            else if (BSC_DEVICE_TYPE == BSC_CADENCE_DEVICE_TYPE)
-            {
-                app_trace_log("%-30s %u rpm\n\r",
-                              "Computed cadence value:",
-                              (unsigned int) calculate_cadence(p_profile->BSC_PROFILE_rev_count,
-                                                               p_profile->BSC_PROFILE_event_time));
-            }
-
-            app_trace_log("\r\n\r\n");
             break;
 
         case ANT_BSC_COMB_PAGE_0_UPDATED:
-
-            app_trace_log("%-30s %u kph\n\r",
-                          "Computed speed value:",
-                          (unsigned int) calculate_speed(p_profile->BSC_PROFILE_speed_rev_count,
-                                                         p_profile->BSC_PROFILE_speed_event_time));
-            app_trace_log("%-30s %u rpm\n\r",
-                          "Computed cadence value:",
-                          (unsigned int) calculate_cadence(p_profile->BSC_PROFILE_cadence_rev_count,
-                                                           p_profile->BSC_PROFILE_cadence_event_time));
-            app_trace_log("\r\n\r\n");
+          
+            _speed = calculate_speed(p_profile->BSC_PROFILE_speed_rev_count, p_profile->BSC_PROFILE_speed_event_time);
+        
+            _cadence = calculate_cadence(p_profile->BSC_PROFILE_cadence_rev_count, p_profile->BSC_PROFILE_cadence_event_time);
+                         
+#ifdef NRF_LOG_USES_RTT
+        SEGGER_RTT_printf(0, "Evenement BSC speed=%u cad=%u\n", _speed, _cadence);
+#endif
             break;
 
         default:
@@ -475,8 +466,8 @@ static void advertising_start(void)
         APP_ERROR_HANDLER(err_code);
     }
 
-    err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-    APP_ERROR_CHECK(err_code);
+    //err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
+    //APP_ERROR_CHECK(err_code);
 }
 
 
@@ -773,6 +764,8 @@ static void ant_hrm_evt_handler(ant_hrm_profile_t * p_profile, ant_hrm_evt_t eve
     uint16_t            beat_time              = p_profile->page_0.beat_time;
     uint32_t            beat_count             = p_profile->page_0.beat_count;
     uint32_t            computed_heart_rate    = p_profile->page_0.computed_heart_rate;
+  
+
 
     switch (event)
     {
@@ -785,6 +778,10 @@ static void ant_hrm_evt_handler(ant_hrm_profile_t * p_profile, ant_hrm_evt_t eve
         case ANT_HRM_PAGE_3_UPDATED:
             break;
         case ANT_HRM_PAGE_4_UPDATED:
+          
+#ifdef NRF_LOG_USES_RTT
+            SEGGER_RTT_printf(0, "Evenement HR BPM=%u\n", (unsigned int)computed_heart_rate);
+#endif
         
             // Ensure that there is only one beat between time intervals.
             if ((beat_count - s_previous_beat_count) == 1)
@@ -793,7 +790,11 @@ static void ant_hrm_evt_handler(ant_hrm_profile_t * p_profile, ant_hrm_evt_t eve
                 
                 // Subtracting the event time gives the R-R interval
                 ble_hrs_rr_interval_add(&m_hrs, beat_time - prev_beat);
+#ifdef NRF_LOG_USES_RTT
+                SEGGER_RTT_printf(0, "Evenement HR RR=%u\n", (unsigned int)(beat_time - prev_beat));
+#endif
             }
+            
 
             s_previous_beat_count = beat_count;
             break;
@@ -830,8 +831,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             break;
             
@@ -858,9 +857,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
 
 #ifndef	BONDING_ENABLE
             case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-                err_code = sd_ble_gatts_sys_attr_set(m_conn_handle,
-                                                     NULL,
-                                                     0,
+                err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0,
                                                      BLE_GATTS_SYS_ATTR_FLAG_SYS_SRVCS | BLE_GATTS_SYS_ATTR_FLAG_USR_SRVCS);
                 APP_ERROR_CHECK(err_code);
                 break;
@@ -972,8 +969,8 @@ static void device_manager_init(void)
     APP_ERROR_CHECK(err_code);
 
     // Clear all bonded centrals if the Bonds Delete button is pushed.
-    err_code = bsp_button_is_pressed(BOND_DELETE_ALL_BUTTON_ID,&(init_param.clear_persistent_data));
-    APP_ERROR_CHECK(err_code);
+    //err_code = bsp_button_is_pressed(BOND_DELETE_ALL_BUTTON_ID,&(init_param.clear_persistent_data));
+    //APP_ERROR_CHECK(err_code);
 
     err_code = dm_init(&init_param);
     APP_ERROR_CHECK(err_code);
@@ -1062,27 +1059,20 @@ void bsp_evt_handler(bsp_event_t evt)
     switch (evt)
     {
         case BSP_EVENT_KEY_0:
-
-            if (actual_state != BSP_INDICATE_FIRST)
-                actual_state--;
-            else
-                actual_state = BSP_INDICATE_LAST;
-            break;
-
         case BSP_EVENT_KEY_1:
+        case BSP_EVENT_KEY_2:
+        case BSP_EVENT_KEY_3:
 
-            if (actual_state != BSP_INDICATE_LAST)
-                actual_state++;
-            else
-                actual_state = BSP_INDICATE_FIRST;
+#ifdef NRF_LOG_USES_RTT
+        SEGGER_RTT_printf(0, "Event bouton %d\n", evt - BSP_EVENT_KEY_0);
+#endif
+
             break;
 
         default:
             return; // no implementation needed
     }
 
-    //err_code = bsp_indication_text_set(actual_state, indications_list[actual_state]);
-    //APP_ERROR_CHECK(err_code);
 }
 
 /**
@@ -1161,8 +1151,6 @@ int main(void)
 
     err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, APP_TIMER_TICKS(100, APP_TIMER_PRESCALER), bsp_evt_handler);
     APP_ERROR_CHECK(err_code);
-    // err_code = bsp_buttons_enable((1 << WAKEUP_BUTTON_ID) | (1 << BOND_DELETE_ALL_BUTTON_ID));
-    // APP_ERROR_CHECK(err_code);
 
 
     // Initialize Bluetooth stack parameters.
@@ -1170,9 +1158,7 @@ int main(void)
     advertising_init();
     services_init();
     conn_params_init();
-		
-
-		
+	
 
 #ifdef BONDING_ENABLE
     uint32_t count; 
@@ -1186,6 +1172,10 @@ int main(void)
     {
         ant_and_adv_start();
     }
+    
+#ifdef NRF_LOG_USES_RTT
+  SEGGER_RTT_printf(0, "Start !!\n"); 
+#endif
 
     // Enter main loop.
     for (;;)
