@@ -168,6 +168,7 @@ CFLAGS += -D__HEAP_SIZE=0
 CFLAGS += -DTRACE_HRM_PAGE_2_ENABLE
 CFLAGS += -DTRACE_HRM_PAGE_3_ENABLE
 CFLAGS += -DS310
+CFLAGS += -DNRF51
 CFLAGS += -DTRACE_HRM_PAGE_4_ENABLE
 CFLAGS += -DTRACE_HRM_PAGE_1_ENABLE
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
@@ -181,7 +182,7 @@ CFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
 # CFLAGS += -DBLE_DFU_APP_SUPPORT
 CFLAGS += -mcpu=cortex-m0
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-CFLAGS += -Wall -Werror -O3 -g3
+CFLAGS += -Wall -O3 -g3
 CFLAGS += -mfloat-abi=soft
 # keep every function in separate section. This will allow linker to dump unused functions
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -203,6 +204,7 @@ ASMFLAGS += -D__HEAP_SIZE=0
 ASMFLAGS += -DTRACE_HRM_PAGE_2_ENABLE
 ASMFLAGS += -DTRACE_HRM_PAGE_3_ENABLE
 ASMFLAGS += -DS310
+ASMFLAGS += -DNRF51
 ASMFLAGS += -DTRACE_HRM_PAGE_4_ENABLE
 ASMFLAGS += -DTRACE_HRM_PAGE_1_ENABLE
 ASMFLAGS += -DCONFIG_GPIO_AS_PINRESET
