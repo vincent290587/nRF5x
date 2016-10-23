@@ -78,6 +78,7 @@ $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_pa
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_page_4.c) \
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_page_5.c) \
 $(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/pages/ant_bsc_combined_page_0.c) \
+$(abspath ../../../../../../components/ant/ant_profiles/ant_glasses/ant_glasses.c) \
 $(abspath ../../../../../../components/ant/ant_key_manager/ant_key_manager.c) \
 $(abspath ../../../../../../components/ant/ant_stack_config/ant_stack_config.c) \
 $(abspath ../../../../../bsp/bsp.c) \
@@ -89,7 +90,7 @@ $(abspath ../../../../../../components/ble/common/ble_advdata.c) \
 $(abspath ../../../../../../components/ble/ble_advertising/ble_advertising.c) \
 $(abspath ../../../../../../components/ble/ble_services/ble_bas/ble_bas.c) \
 $(abspath ../../../../../../components/ble/common/ble_conn_params.c) \
-$(abspath ../../../../../../components/ble/ble_services/ble_dis/ble_dis.c) \
+$(abspath ../../../../../../components/ble/ble_services/ble_nus/ble_nus.c) \
 $(abspath ../../../../../../components/ble/ble_services/ble_hrs/ble_hrs.c) \
 $(abspath ../../../../../../components/ble/ble_services/ble_dfu/ble_dfu.c) \
 $(abspath ../../../../../../components/ble/common/ble_srv_common.c) \
@@ -117,8 +118,9 @@ INC_PATHS += -I$(abspath ../../../../../../components/drivers_nrf/uart)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/common)
 INC_PATHS += -I$(abspath ../../../../../../components/libraries/sensorsim)
 INC_PATHS += -I$(abspath ../../../../../../components/ant/ant_profiles/ant_hrm/utils)
-INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_services/ble_dis)
+INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_services/ble_nus)
 INC_PATHS += -I$(abspath ../../../../../../components/ble/ble_services/ble_dfu)
+INC_PATHS += -I$(abspath ../../../../../../components/ant/ant_profiles/ant_glasses)
 INC_PATHS += -I$(abspath ../../../../../../components/ant/ant_profiles/ant_hrm)
 INC_PATHS += -I$(abspath ../../../../../../components/ant/ant_profiles/ant_bsc)
 INC_PATHS += -I$(abspath ../../../../../../components/ant/ant_profiles/ant_bsc/utils)
@@ -189,21 +191,16 @@ CFLAGS += -DNRF52_PAN_37
 CFLAGS += -DNRF52_PAN_36
 CFLAGS += -DNRF52_PAN_35
 CFLAGS += -DANT_STACK_SUPPORT_REQD
+CFLAGS += -DBLE_STACK_SUPPORT_REQD
 CFLAGS += -D__HEAP_SIZE=0
-CFLAGS += -DTRACE_HRM_PAGE_2_ENABLE
-CFLAGS += -DTRACE_HRM_PAGE_3_ENABLE
 CFLAGS += -DS332
 CFLAGS += -DNRF52_PAN_10
-CFLAGS += -DTRACE_HRM_PAGE_4_ENABLE
-CFLAGS += -DTRACE_HRM_PAGE_1_ENABLE
 CFLAGS += -DCONFIG_GPIO_AS_PINRESET
 CFLAGS += -DNRF52_PAN_12
 CFLAGS += -DENABLE_DEBUG_LOG_SUPPORT
-CFLAGS += -DBLE_STACK_SUPPORT_REQD
 CFLAGS += -DNRF52_PAN_28
 CFLAGS += -DNRF52_PAN_29
 CFLAGS += -DSWI_DISABLE0
-CFLAGS += -DTRACE_HRM_GENERAL_ENABLE
 CFLAGS += -DNRF52_PAN_20
 CFLAGS += -DBOARD_PCA10036
 CFLAGS += -DNRF52_PAN_24
@@ -220,13 +217,12 @@ CFLAGS += -DNRF52_PAN_44
 CFLAGS += -DNRF52_PAN_63
 CFLAGS += -DNRF52_PAN_48
 CFLAGS += -DNRF52_PAN_49
-CFLAGS += -DTRACE_HRM_PAGE_0_ENABLE
-# CFLAGS += -DUSE_TUNES
-CFLAGS += -DNRF_LOG_USES_RTT=1
-CFLAGS += -DBLE_DFU_APP_SUPPORT
+CFLAGS += -DNRF_LOG_USES_RTT=1 -DDEBUG
+CFLAGS += -DUSE_TUNES
+# CFLAGS += -DBLE_DFU_APP_SUPPORT
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs --std=gnu99
-CFLAGS += -Wall -Werror -O3
+CFLAGS += -Wall -O2
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 # keep every function in separate section. This will allow linker to dump unused functions
 CFLAGS += -ffunction-sections -fdata-sections -fno-strict-aliasing
@@ -395,7 +391,7 @@ cleanobj:
 	$(RM) $(BUILD_DIRECTORIES)/*.o
 flash: nrf52832_xxaa
 	@echo Flashing: $(OUTPUT_BINARY_DIRECTORY)/$<.hex
-	$(NRFJPROG) --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf52  --chiperase
+	$(NRFJPROG) --program $(OUTPUT_BINARY_DIRECTORY)/$<.hex -f nrf52 --sectorerase
 	$(NRFJPROG) --reset -f nrf52
 
 ## Flash softdevice
